@@ -54,6 +54,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
     });
 
+builder.Services.AddScoped<IAuctionRepository, AuctionRepository>();
+
 var app = builder.Build();
 
 app.UseHttpsRedirection();
@@ -77,3 +79,4 @@ catch (Exception ex)
 
 app.Run();
 
+public partial class Program { }

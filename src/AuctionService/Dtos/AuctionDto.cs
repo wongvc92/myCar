@@ -1,3 +1,5 @@
+using AuctionService.Entities;
+
 namespace AuctionService.Dtos;
 
 public class AuctionDto
@@ -12,7 +14,7 @@ public class AuctionDto
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public DateTime AuctionEnd { get; set; }
-    public string Status { get; set; } = default!;
+    public Status Status { get; set; }
     public string Make { get; set; } = string.Empty;
     public string Model { get; set; } = string.Empty;
     public int Year { get; set; }

@@ -16,4 +16,6 @@ public class UpdateAuctionDto
 
 
     public int? Mileage { get; set; }
+
+
 }
