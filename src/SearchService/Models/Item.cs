@@ -14,7 +14,7 @@ namespace SearchService.Models
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public DateTime AuctionEnd { get; set; }
-        public string Status { get; set; } = default!;
+        public string Status { get; set; } = "Live";
         public string Make { get; set; } = string.Empty;
         public string Model { get; set; } = string.Empty;
         public int Year { get; set; }

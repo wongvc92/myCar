@@ -1,4 +1,3 @@
-
 using Polly;
 using SearchService.Data;
 using SearchService.Services;
@@ -8,63 +7,89 @@ using SearchService.Consumers;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
-builder.Services.AddControllers();
-builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-builder.Services.AddHttpClient<AuctionSvcHttpClient>().AddPolicyHandler(GetPolicy());
-
-builder.Services.AddMassTransit(x =>
-
+try
 {
-    x.AddConsumersFromNamespaceContaining<AuctionCreatedConsumer>();
-    x.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("search", false));
-    x.UsingRabbitMq((context, cfg) =>
+    Console.WriteLine("🚀 Starting SearchService...");
+
+    // Add services to the container
+    builder.Services.AddControllers();
+    builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+    // Register HTTP Client with retry policy
+    builder.Services.AddHttpClient<AuctionSvcHttpClient>()
+        .AddPolicyHandler(GetPolicy());
+
+    // Configure MassTransit with RabbitMQ
+    builder.Services.AddMassTransit(x =>
     {
+        x.AddConsumersFromNamespaceContaining<AuctionCreatedConsumer>();
+        x.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("search", false));
 
-        cfg.Host(builder.Configuration["RabbitMq:Host"], "/", host =>
+        x.UsingRabbitMq((context, cfg) =>
         {
-            host.Username(builder.Configuration.GetValue("RabbitMq:Username", "guest")!);
-            host.Password(builder.Configuration.GetValue("RabbitMq:Password", "guest")!);
-        });
+            try
+            {
+                Console.WriteLine("🔗 Connecting to RabbitMQ...");
 
-        cfg.ReceiveEndpoint("search-auction-created", e =>
-        {
-            e.UseMessageRetry(r => r.Interval(5, 5));
-            e.ConfigureConsumer<AuctionCreatedConsumer>(context);
+                cfg.Host(builder.Configuration["RabbitMq:Host"], "/", host =>
+                {
+                    host.Username(builder.Configuration.GetValue("RabbitMq:Username", "guest")!);
+                    host.Password(builder.Configuration.GetValue("RabbitMq:Password", "guest")!);
+                });
+
+                cfg.ReceiveEndpoint("search-auction-created", e =>
+                {
+                    e.UseMessageRetry(r => r.Interval(5, 5));
+                    e.ConfigureConsumer<AuctionCreatedConsumer>(context);
+                });
+
+                cfg.ConfigureEndpoints(context);
+
+                Console.WriteLine("✅ RabbitMQ connection successful.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ ERROR: Failed to connect to RabbitMQ: {ex.Message}");
+            }
         });
-        cfg.ConfigureEndpoints(context);
     });
-});
 
-var app = builder.Build();
+    var app = builder.Build();
 
-app.UseAuthorization();
+    // Configure Middleware
+    app.UseAuthorization();
+    app.MapControllers();
 
-app.MapControllers();
+    // Database Seeding on Startup
+    app.Lifetime.ApplicationStarted.Register(async () =>
+    {
+        try
+        {
+            Console.WriteLine("📦 Initializing MongoDB...");
+            await DbInitializer.InitDb(app);
+            Console.WriteLine("✅ MongoDB initialization complete.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ ERROR: Failed to initialize MongoDB: {ex.Message}");
+        }
+    });
 
-app.Lifetime.ApplicationStarted.Register(async () =>
+    // Run Application
+    app.Run();
+}
+catch (Exception ex)
 {
-    try
-    {
-        await DbInitializer.InitDb(app);
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine(ex.Message);
-    }
-});
+    Console.WriteLine($"❌ FATAL ERROR: {ex.Message}");
+}
+finally
+{
+    Console.WriteLine("🔄 Service shutting down...");
+}
 
-
-
-
-
-app.Run();
-
-
-static IAsyncPolicy<HttpResponseMessage> GetPolicy()
-=> HttpPolicyExtensions
-    .HandleTransientHttpError()
-    .OrResult(msg => msg.StatusCode == System.Net.HttpStatusCode.NotFound)
-    .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
-
+// Define the retry policy
+static IAsyncPolicy<HttpResponseMessage> GetPolicy() =>
+    HttpPolicyExtensions
+        .HandleTransientHttpError()
+        .OrResult(msg => msg.StatusCode == System.Net.HttpStatusCode.NotFound)
+        .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));

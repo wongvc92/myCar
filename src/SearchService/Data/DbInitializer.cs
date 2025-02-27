@@ -31,33 +31,9 @@ namespace SearchService.Data
 
             if (items.Count > 0)
             {
-                await DB.InsertAsync(items);
+                await DB.SaveAsync(items);
             }
 
-            // if (count == 0)
-            // {
-            //     Console.WriteLine("Seeding database...");
-
-            //     // Read the JSON data from the file
-
-            //     var itemData = await File.ReadAllTextAsync("Data/auctions.json");
-
-            //     // Configure the JSON deserializer to ignore case
-
-            //     var options = new JsonSerializerOptions
-            //     {
-            //         PropertyNameCaseInsensitive = true
-            //     };
-
-            //     // Deserialize the JSON data into a list of Item objects
-            //     var items = JsonSerializer.Deserialize<List<Item>>(itemData, options);
-
-            //     // Insert the items into the database
-            //     if (items != null)
-            //     {
-            //         await DB.InsertAsync(items);
-            //     }
-            // }
         }
     }
 }

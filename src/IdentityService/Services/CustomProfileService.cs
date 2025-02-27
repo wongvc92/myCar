@@ -31,7 +31,7 @@ public class CustomProfileService : IProfileService
             };
 
         context.IssuedClaims.AddRange(claims);
-        context.IssuedClaims!.AddRange(existingClaims.FirstOrDefault(x => x.Type == JwtClaimTypes.Name));
+        context.IssuedClaims!.Add(existingClaims.FirstOrDefault(x => x.Type == JwtClaimTypes.Name)!);
 
     }
 
