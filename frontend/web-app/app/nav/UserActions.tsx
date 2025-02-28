@@ -13,12 +13,34 @@ import { Button } from "@/components/ui/button";
 import { HiCog, HiUser } from "react-icons/hi";
 import { AiFillCar, AiFillTrophy, AiOutlineLogout } from "react-icons/ai";
 import { signOut } from "next-auth/react";
+import { usePathname, useRouter } from "next/navigation";
+import { useParamsStore } from "@/hooks/useParamsStore";
 
 type Props = {
   user: User;
 };
 const UserActions = ({ user }: Props) => {
-  console.log("user", user);
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const setParams = useParamsStore((state) => state.setParams);
+
+  const setWinner = () => {
+    setParams({
+      winner: user.username,
+      seller: undefined,
+    });
+    if (pathname !== "/") router.push("/");
+  };
+
+  const setSeller = () => {
+    setParams({
+      seller: user.username,
+      winner: undefined,
+    });
+    if (pathname !== "/") router.push("/");
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -28,13 +50,17 @@ const UserActions = ({ user }: Props) => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56">
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={setSeller}>
+          <HiUser />
+          My Auctions
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={setWinner}>
           <AiFillTrophy />
-          <Link href={"/"}>Auctions won</Link>
+          Auctions won
         </DropdownMenuItem>
         <DropdownMenuItem>
           <AiFillCar />
-          <Link href={"/"}>Sell my car</Link>
+          <Link href={"/auctions/create"}>Sell my car</Link>
         </DropdownMenuItem>
         <DropdownMenuItem>
           <HiCog />

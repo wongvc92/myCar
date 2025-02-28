@@ -9,7 +9,7 @@ type Props = {
 
 const AuctionCard = ({ auction }: Props) => {
   return (
-    <Link href={"#"} prefetch={false} className="group">
+    <Link href={`/auctions/details/${auction.id}`} prefetch={false} className="group">
       <div className="relative w-full bg-gray-200 aspect-[16/10] rounded-lg overflow-hidden">
         <CarImage auction={auction} />
         <div className="absolute bottom-2 left-2">
